@@ -2,10 +2,11 @@
   "name": "money-mgr",
   "version": "1.0.0",
   "description": "App to manage expenses",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
-    "start": "nodemon src/app.js",
-    "test": "jest"
+    "start": "nodemon src/server.js",
+    "test": "jest",
+    "secure-mode": "jest --watch --verbose=true"
   },
   "author": "Rafael Marques",
   "license": "ISC",
