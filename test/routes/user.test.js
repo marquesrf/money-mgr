@@ -1,6 +1,8 @@
 const request = require("supertest");
 const app = require("../../src/app");
 
+const mail = `${Date.now()}@mail.com`;
+
 test("Must list all users", () => {
   return request(app)
     .get("/users")
@@ -11,7 +13,6 @@ test("Must list all users", () => {
 });
 
 test("Must insert a user", () => {
-  const mail = `${Date.now()}@mail.com`;
   return request(app)
     .post("/users")
     .send({ name: "Walter Mitty", mail, passwd: "123456" })
@@ -22,7 +23,6 @@ test("Must insert a user", () => {
 });
 
 test("Must NOT insert a user without a name", () => {
-  const mail = `${Date.now()}@mail.com`;
   return request(app)
     .post("/users")
     .send({ mail, passwd: "123456" })
@@ -43,7 +43,6 @@ test("Must NOT insert a user without a email", async () => {
 
 // Using done
 test("Must NOT insert a user without a password", done => {
-  const mail = `${Date.now()}@mail.com`;
   request(app)
     .post("/users")
     .send({ name: "Walter Mitty", mail })
@@ -53,4 +52,14 @@ test("Must NOT insert a user without a password", done => {
       done();
     })
     .catch(err => done.fail(err));
+});
+
+test("Must NOT insert a user with a already existent email", () => {
+  return request(app)
+    .post("/users")
+    .send({ name: "Walter Mitty", mail, passwd: "123456" })
+    .then(res => {
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("The email is already in use!");
+    });
 });
