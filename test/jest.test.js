@@ -1,4 +1,4 @@
-test("Conhecer as principais assertivas do jest", () => {
+test("Basic use of jest", () => {
   let number = null;
   expect(number).toBeNull();
   number = 10;
@@ -9,7 +9,7 @@ test("Conhecer as principais assertivas do jest", () => {
   expect(number).toBeLessThan(11);
 });
 
-test("Saber trabalhar com objetos", () => {
+test("Simple objects tests", () => {
   const obj = { name: "John", mail: "john@mail.com" };
   expect(obj).toHaveProperty("name");
   expect(obj.mail).toBe("john@mail.com");
