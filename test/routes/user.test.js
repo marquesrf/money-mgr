@@ -40,3 +40,17 @@ test("Must NOT insert a user without a email", async () => {
   expect(result.status).toBe(400);
   expect(result.body.error).toBe("The 'mail' attribute is mandatory!");
 });
+
+// Using done
+test("Must NOT insert a user without a password", done => {
+  const mail = `${Date.now()}@mail.com`;
+  request(app)
+    .post("/users")
+    .send({ name: "Walter Mitty", mail })
+    .then(res => {
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("The 'passwd' attribute is mandatory!");
+      done();
+    })
+    .catch(err => done.fail(err));
+});
