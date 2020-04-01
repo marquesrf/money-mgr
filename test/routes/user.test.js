@@ -31,3 +31,12 @@ test("Must NOT insert a user without a name", () => {
       expect(res.body.error).toBe("The 'name' attribute is mandatory!");
     });
 });
+
+// Using async await
+test("Must NOT insert a user without a email", async () => {
+  const result = await request(app)
+    .post("/users")
+    .send({ name: "Walter Mitty", passwd: "123456" });
+  expect(result.status).toBe(400);
+  expect(result.body.error).toBe("The 'mail' attribute is mandatory!");
+});
