@@ -3,23 +3,30 @@ const jwt = require("jwt-simple");
 
 const app = require("../../src/app");
 
-const MAIN_ROUTE = "/accounts";
+const MAIN_ROUTE = "/v1//accounts";
 let user;
+let user2;
 
-beforeAll(async () => {
+beforeEach(async () => {
   const res = await app.services.user.save({
-    name: "Walter Mitty",
+    name: "User account",
     mail: `${Date.now()}@mail.com`,
     passwd: "123456",
   });
   user = { ...res[0] };
   user.token = jwt.encode(user, "s3cr3t");
+  const res2 = await app.services.user.save({
+    name: "User account #2",
+    mail: `${Date.now()}@mail.com`,
+    passwd: "123456",
+  });
+  user2 = { ...res2[0] };
 });
 
 test("Must insert an account", () => {
   return request(app)
     .post(MAIN_ROUTE)
-    .send({ name: "Acc #1", user_id: user.id })
+    .send({ name: "Acc #1" })
     .set("authorization", `bearer ${user.token}`)
     .then((result) => {
       expect(result.status).toBe(201);
@@ -30,7 +37,7 @@ test("Must insert an account", () => {
 test("Must NOT insert a account without a name", () => {
   return request(app)
     .post(MAIN_ROUTE)
-    .send({ user_id: user.id })
+    .send({})
     .set("authorization", `bearer ${user.token}`)
     .then((result) => {
       expect(result.status).toBe(400);
@@ -38,23 +45,38 @@ test("Must NOT insert a account without a name", () => {
     });
 });
 
-test.skip("Must NOT insert an account with a name already in use", () => {});
-
-test("Must list all accounts", () => {
+test("Must NOT insert an account with a name already in use", () => {
   return app
     .db("accounts")
-    .insert({ name: "Acc #1", user_id: user.id })
+    .insert({ name: "Acc already in use", user_id: user.id })
+    .then(() =>
+      request(app)
+        .post(MAIN_ROUTE)
+        .set("authorization", `bearer ${user.token}`)
+        .send({ name: "Acc already in use" })
+    )
+    .then((res) => {
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("This user is already in use!");
+    });
+});
+
+test("Must list only user owned accounts", () => {
+  return app
+    .db("accounts")
+    .insert([
+      { name: "Acc User #1", user_id: user.id },
+      { name: "Acc User #2", user_id: user2.id },
+    ])
     .then(() =>
       request(app).get(MAIN_ROUTE).set("authorization", `bearer ${user.token}`)
     )
     .then((res) => {
       expect(res.status).toBe(200);
-      expect(res.body.length).toBeGreaterThan(1);
+      expect(res.body.length).toBe(1);
+      expect(res.body[0].name).toBe("Acc User #1");
     });
 });
-
-// this scenario will remove the previous one
-test.skip("Must list only user owned accounts", () => {});
 
 test("Must list an account given a id", () => {
   return app
@@ -72,7 +94,20 @@ test("Must list an account given a id", () => {
     });
 });
 
-test.skip("Must NOT list an account given a id that is not owned by the user", () => {});
+test("Must NOT list an account given a id that is not owned by the user", () => {
+  return app
+    .db("accounts")
+    .insert({ name: "Acc User #2", user_id: user2.id }, ["id"])
+    .then((acc) =>
+      request(app)
+        .get(`${MAIN_ROUTE}/${acc[0].id}`)
+        .set("authorization", `bearer ${user.token}`)
+    )
+    .then((res) => {
+      expect(res.status).toBe(403);
+      expect(res.body.error).toBe("This resource does not belong to the user!");
+    });
+});
 
 test("Must update an account given a id", () => {
   return app
@@ -90,7 +125,21 @@ test("Must update an account given a id", () => {
     });
 });
 
-test.skip("Must NOT update an account given a id that is not owned by the user", () => {});
+test("Must NOT update an account given a id that is not owned by the user", () => {
+  return app
+    .db("accounts")
+    .insert({ name: "Acc User #2", user_id: user2.id }, ["id"])
+    .then((acc) =>
+      request(app)
+        .put(`${MAIN_ROUTE}/${acc[0].id}`)
+        .send({ name: "Acc updated" })
+        .set("authorization", `bearer ${user.token}`)
+    )
+    .then((res) => {
+      expect(res.status).toBe(403);
+      expect(res.body.error).toBe("This resource does not belong to the user!");
+    });
+});
 
 test("Must delete an account given a id", () => {
   return app
@@ -106,4 +155,17 @@ test("Must delete an account given a id", () => {
     });
 });
 
-test.skip("Must NOT delete an account given a id that is not owned by the user", () => {});
+test("Must NOT delete an account given a id that is not owned by the user", () => {
+  return app
+    .db("accounts")
+    .insert({ name: "Acc User #2", user_id: user2.id }, ["id"])
+    .then((acc) =>
+      request(app)
+        .delete(`${MAIN_ROUTE}/${acc[0].id}`)
+        .set("authorization", `bearer ${user.token}`)
+    )
+    .then((res) => {
+      expect(res.status).toBe(403);
+      expect(res.body.error).toBe("This resource does not belong to the user!");
+    });
+});

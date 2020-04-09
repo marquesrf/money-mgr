@@ -51,7 +51,7 @@ test("Must NOT authenticate user with wrong password", () => {
 
 test("Must NOT access protected a route without a token", () => {
   return request(app)
-    .get("/users")
+    .get("/v1/users")
     .then((res) => {
       expect(res.status).toBe(401);
     });

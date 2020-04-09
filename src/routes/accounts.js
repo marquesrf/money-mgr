@@ -1,40 +1,56 @@
+const express = require("express");
+
+const UnauthorizedResourceError = require("../errors/UnauthorizedResourceError");
+
 module.exports = (app) => {
-  const create = (req, res, next) => {
+  const router = express.Router();
+
+  router.param("id", (req, res, next) => {
     app.services.account
-      .save(req.body)
+      .findOne({ id: req.params.id })
+      .then((acc) => {
+        if (acc.user_id !== req.user.id) throw new UnauthorizedResourceError();
+        else next();
+      })
+      .catch((err) => next(err));
+  });
+
+  router.post("/", (req, res, next) => {
+    app.services.account
+      .save({ ...req.body, user_id: req.user.id })
       .then((result) => {
         return res.status(201).json(result[0]);
       })
       .catch((err) => next(err));
-  };
+  });
 
-  const findAll = (req, res, next) => {
+  router.get("/", (req, res, next) => {
     app.services.account
-      .findAll()
+      .findAll(req.user.id)
       .then((result) => res.status(200).json(result))
       .catch((err) => next(err));
-  };
+  });
 
-  const findOne = (req, res, next) => {
+  router.get("/:id", (req, res, next) => {
     app.services.account
       .findOne({ id: req.params.id })
       .then((result) => res.status(200).json(result))
       .catch((err) => next(err));
-  };
+  });
 
-  const update = (req, res, next) => {
+  router.put("/:id", (req, res, next) => {
     app.services.account
       .update(req.params.id, req.body)
       .then((result) => res.status(200).json(result[0]))
       .catch((err) => next(err));
-  };
+  });
 
-  const remove = (req, res, next) => {
+  router.delete("/:id", (req, res, next) => {
     app.services.account
       .remove(req.params.id)
       .then((result) => res.status(204).send())
       .catch((err) => next(err));
-  };
+  });
 
-  return { create, findAll, findOne, update, remove };
+  return router;
 };

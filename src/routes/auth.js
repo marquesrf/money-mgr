@@ -1,12 +1,14 @@
 const jwt = require("jwt-simple");
 const bcrypt = require("bcrypt-nodejs");
+const express = require("express");
 
 const ValidationError = require("../errors/ValidationError");
 
 const secret = "s3cr3t";
 
 module.exports = (app) => {
-  const signin = (req, res, next) => {
+  const router = express.Router();
+  router.post("/signin", (req, res, next) => {
     app.services.user
       .findOne({ mail: req.body.mail })
       .then((user) => {
@@ -22,6 +24,15 @@ module.exports = (app) => {
         } else throw new ValidationError("Wrong username or password!");
       })
       .catch((err) => next(err));
-  };
-  return { signin };
+  });
+
+  router.post("/signup", async (req, res, next) => {
+    try {
+      const result = await app.services.user.save(req.body);
+      return res.status(201).json(result[0]);
+    } catch (err) {
+      return next(err);
+    }
+  });
+  return router;
 };

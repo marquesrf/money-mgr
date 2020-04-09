@@ -4,6 +4,7 @@ const jwt = require("jwt-simple");
 const app = require("../../src/app");
 
 const mail = `${Date.now()}@mail.com`;
+const MAIN_ROUTE = "/v1//users";
 
 let user;
 
@@ -19,7 +20,7 @@ beforeAll(async () => {
 
 test("Must list all users", () => {
   return request(app)
-    .get("/users")
+    .get(MAIN_ROUTE)
     .set("authorization", `bearer ${user.token}`)
     .then((res) => {
       expect(res.status).toBe(200);
@@ -30,7 +31,7 @@ test("Must list all users", () => {
 
 test("Must insert a user", () => {
   return request(app)
-    .post("/users")
+    .post(MAIN_ROUTE)
     .send({ name: "Walter Mitty", mail, passwd: "123456" })
     .set("authorization", `bearer ${user.token}`)
     .then((res) => {
@@ -42,7 +43,7 @@ test("Must insert a user", () => {
 
 test("Must store encrypted password", async () => {
   const res = await request(app)
-    .post("/users")
+    .post(MAIN_ROUTE)
     .send({
       name: "Walter Mitty",
       mail: `${Date.now()}@mail.com`,
@@ -58,7 +59,7 @@ test("Must store encrypted password", async () => {
 
 test("Must NOT insert a user without a name", () => {
   return request(app)
-    .post("/users")
+    .post(MAIN_ROUTE)
     .send({ mail, passwd: "123456" })
     .set("authorization", `bearer ${user.token}`)
     .then((res) => {
@@ -70,7 +71,7 @@ test("Must NOT insert a user without a name", () => {
 // Using async await
 test("Must NOT insert a user without a email", async () => {
   const result = await request(app)
-    .post("/users")
+    .post(MAIN_ROUTE)
     .send({ name: "Walter Mitty", passwd: "123456" })
     .set("authorization", `bearer ${user.token}`);
   expect(result.status).toBe(400);
@@ -80,7 +81,7 @@ test("Must NOT insert a user without a email", async () => {
 // Using done
 test("Must NOT insert a user without a password", (done) => {
   request(app)
-    .post("/users")
+    .post(MAIN_ROUTE)
     .send({ name: "Walter Mitty", mail })
     .set("authorization", `bearer ${user.token}`)
     .then((res) => {
@@ -93,7 +94,7 @@ test("Must NOT insert a user without a password", (done) => {
 
 test("Must NOT insert a user with a already existent email", () => {
   return request(app)
-    .post("/users")
+    .post(MAIN_ROUTE)
     .send({ name: "Walter Mitty", mail, passwd: "123456" })
     .set("authorization", `bearer ${user.token}`)
     .then((res) => {
