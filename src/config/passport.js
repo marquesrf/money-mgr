@@ -11,7 +11,7 @@ module.exports = (app) => {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
   };
 
-  const strategy = Strategy(params, (payload, done) => {
+  const strategy = new Strategy(params, (payload, done) => {
     app.services.user
       .findOne({ id: payload.id })
       .then((user) => {

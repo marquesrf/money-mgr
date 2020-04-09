@@ -1,4 +1,6 @@
 const request = require("supertest");
+const jwt = require("jwt-simple");
+
 const app = require("../../src/app");
 
 const MAIN_ROUTE = "/accounts";
@@ -11,12 +13,14 @@ beforeAll(async () => {
     passwd: "123456",
   });
   user = { ...res[0] };
+  user.token = jwt.encode(user, "s3cr3t");
 });
 
 test("Must insert an account", () => {
   return request(app)
     .post(MAIN_ROUTE)
     .send({ name: "Acc #1", user_id: user.id })
+    .set("authorization", `bearer ${user.token}`)
     .then((result) => {
       expect(result.status).toBe(201);
       expect(result.body.name).toBe("Acc #1");
@@ -27,6 +31,7 @@ test("Must NOT insert a account without a name", () => {
   return request(app)
     .post(MAIN_ROUTE)
     .send({ user_id: user.id })
+    .set("authorization", `bearer ${user.token}`)
     .then((result) => {
       expect(result.status).toBe(400);
       expect(result.body.error).toBe("Name is a mandatory parameter!");
@@ -39,7 +44,9 @@ test("Must list all accounts", () => {
   return app
     .db("accounts")
     .insert({ name: "Acc #1", user_id: user.id })
-    .then(() => request(app).get(MAIN_ROUTE))
+    .then(() =>
+      request(app).get(MAIN_ROUTE).set("authorization", `bearer ${user.token}`)
+    )
     .then((res) => {
       expect(res.status).toBe(200);
       expect(res.body.length).toBeGreaterThan(1);
@@ -53,7 +60,11 @@ test("Must list an account given a id", () => {
   return app
     .db("accounts")
     .insert({ name: "Acc by id", user_id: user.id }, ["id"])
-    .then((acc) => request(app).get(`${MAIN_ROUTE}/${acc[0].id}`))
+    .then((acc) =>
+      request(app)
+        .get(`${MAIN_ROUTE}/${acc[0].id}`)
+        .set("authorization", `bearer ${user.token}`)
+    )
     .then((res) => {
       expect(res.status).toBe(200);
       expect(res.body.name).toBe("Acc by id");
@@ -71,6 +82,7 @@ test("Must update an account given a id", () => {
       request(app)
         .put(`${MAIN_ROUTE}/${acc[0].id}`)
         .send({ name: "Acc updated" })
+        .set("authorization", `bearer ${user.token}`)
     )
     .then((res) => {
       expect(res.status).toBe(200);
@@ -84,7 +96,11 @@ test("Must delete an account given a id", () => {
   return app
     .db("accounts")
     .insert({ name: "Acc to remove", user_id: user.id }, ["id"])
-    .then((acc) => request(app).delete(`${MAIN_ROUTE}/${acc[0].id}`))
+    .then((acc) =>
+      request(app)
+        .delete(`${MAIN_ROUTE}/${acc[0].id}`)
+        .set("authorization", `bearer ${user.token}`)
+    )
     .then((res) => {
       expect(res.status).toBe(204);
     });
